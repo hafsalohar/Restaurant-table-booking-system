@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Delicious Restaurant - Table Booking</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+  body { background: #fff5ee; color: #333; }
+  header { background: #d63031; color: white; padding: 25px; text-align: center; }
+  header h1 { font-size: 32px; }
+  header p { opacity: 0.9; margin-top: 5px; }
+  .container { max-width: 1000px; margin: 20px auto; padding: 0 15px; display: flex; gap: 20px; flex-wrap: wrap; }
+  .tables-box, .form-box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+  .tables-box { flex: 1.2; min-width: 300px; }
+  .form-box { flex: 1; min-width: 300px; }
+  h2 { margin-bottom: 15px; color: #d63031; }
+  .tables-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .table { border: 2px solid #dfe6e9; padding: 20px 10px; text-align: center; border-radius: 12px; cursor: pointer; transition: 0.2s; }
+  .table span { font-size: 28px; display: block; }
+  .table small { color: #636e72; }
+  .table:hover { border-color: #d63031; }
+  .table.selected { background: #d63031; color: white; border-color: #d63031; }
+  .table.selected small { color: white; }
+  .table.booked { background: #dfe6e9; color: #999; cursor: not-allowed; text-decoration: line-through; }
+  label { display: block; margin: 12px 0 5px; font-weight: 600; font-size: 14px; }
+  input, select { width: 100%; padding: 11px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; outline: none; }
+  input:focus, select:focus { border-color: #d63031; }
+  button { width: 100%; background: #d63031; color: white; border: none; padding: 13px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 18px; }
+  button:hover { background: #b71c1c; }
+  #message { margin-top: 15px; padding: 12px; border-radius: 8px; display: none; text-align: center; font-weight: 600; }
+  .success { background: #d4edda; color: #155724; display: block !important; }
+  .error { background: #f8d7da; color: #721c24; display: block !important; }
+  .booking-list { margin-top: 20px; }
+  .booking-item { background: #ffeaa7; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 14px; display: flex; justify-content: space-between; }
+  .booking-item button { width: auto; padding: 5px 10px; font-size: 12px; margin: 0; background: #636e72; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🍽️ Delicious Restaurant</h1>
+  <p>Book your table in 30 seconds</p>
+</header>
+
+<div class="container">
+  <!-- LEFT: TABLES -->
+  <div class="tables-box">
+    <h2>Select Your Table</h2>
+    <p style="font-size:13px; color:#636e72; margin-bottom:12px;">Green = Available | Grey = Booked | Red = Selected</p>
+    <div class="tables-grid" id="tablesGrid"></div>
+
+    <div class="booking-list">
+      <h3 style="margin-bottom:10px;">My Bookings</h3>
+      <div id="bookingList"><p style="color:#999; font-size:14px;">No bookings yet.</p></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: FORM -->
+  <div class="form-box">
+    <h2>Booking Details</h2>
+    <label>Your Name</label>
+    <input type="text" id="name" placeholder="e.g. Ayesha Khan">
+
+    <label>Phone Number</label>
+    <input type="tel" id="phone" placeholder="03xx-xxxxxxx">
+
+    <label>Date</label>
+    <input type="date" id="date">
+
+    <label>Time</label>
+    <select id="time">
+      <option value="">Select Time</option>
+      <option>12:00 PM - Lunch</option>
+      <option>02:00 PM - Lunch</option>
+      <option>06:00 PM - Dinner</option>
+      <option>08:00 PM - Dinner</option>
+      <option>10:00 PM - Dinner</option>
+    </select>
+
+    <label>Guests</label>
+    <select id="guests">
+      <option value="2">2 People</option>
+      <option value="4">4 People</option>
+      <option value="6">6 People</option>
+      <option value="8">8 People</option>
+    </select>
+
+    <label>Selected Table</label>
+    <input type="text" id="selectedTableInput" placeholder="Click a table on left" readonly>
+
+    <button onclick="bookTable()">Confirm Booking ✅</button>
+    <div id="message"></div>
+  </div>
+</div>
+
+<script>
+  let selectedTable = null;
+  let bookings = [];
+  // Some tables are already booked
+  let bookedTables = [3, 7];
+
+  const grid = document.getElementById("tablesGrid");
+
+  // Create 9 Tables using For Loop
+  for (let i = 1; i <= 9; i++) {
+    let div = document.createElement("div");
+    div.className = "table";
+    div.innerHTML = `<span>🪑</span><b>Table ${i}</b><br><small>${i <= 3 ? '2 Seats' : i <= 6 ? '4 Seats' : '6 Seats'}</small>`;
+    
+    if (bookedTables.includes(i)) {
+      div.classList.add("booked");
+      div.innerHTML += "<br><small>Booked</small>";
+    } else {
+      div.onclick = function() {
+        document.querySelectorAll(".table").forEach(t => t.classList.remove("selected"));
+        div.classList.add("selected");
+        selectedTable = i;
+        document.getElementById("selectedTableInput").value = "Table " + i;
+      };
+    }
+    grid.appendChild(div);
+  }
+
+  function bookTable() {
+    let name = document.getElementById("name").value;
+    let phone = document.getElementById("phone").value;
+    let date = document.getElementById("date").value;
+    let time = document.getElementById("time").value;
+    let guests = document.getElementById("guests").value;
+    let msg = document.getElementById("message");
+
+    if (!name || !phone || !date || !time || !selectedTable) {
+      msg.textContent = "Please fill all fields and select a table!";
+      msg.className = "error";
+      return;
+    }
+
+    let booking = { name, table: selectedTable, date, time, guests };
+    bookings.push(booking);
+
+    // Mark table as booked
+    let tableDivs = document.querySelectorAll(".table");
+    tableDivs[selectedTable - 1].classList.remove("selected");
+    tableDivs[selectedTable - 1].classList.add("booked");
+
+    msg.textContent = `Success! Table ${selectedTable} booked for ${name} on ${date} at ${time}`;
+    msg.className = "success";
+
+    showBookings();
+    selectedTable = null;
+    document.getElementById("selectedTableInput").value = "";
+    document.getElementById("name").value = "";
+    document.getElementById("phone").value = "";
+  }
+
+  function showBookings() {
+    let list = document.getElementById("bookingList");
+    list.innerHTML = "";
+    bookings.forEach((b, index) => {
+      list.innerHTML += `<div class="booking-item">
+        <span><b>Table ${b.table}</b> - ${b.name} (${b.guests} guests) <br>${b.date} | ${b.time}</span>
+        <button onclick="cancelBooking(${index}, ${b.table})">Cancel</button>
+      </div>`;
+    });
+  }
+
+  function cancelBooking(index, tableNo) {
+    bookings.splice(index, 1);
+    let tableDivs = document.querySelectorAll(".table");
+    tableDivs[tableNo - 1].classList.remove("booked");
+    // Re-enable click
+    tableDivs[tableNo - 1].onclick = function() {
+      document.querySelectorAll(".table").forEach(t => t.classList.remove("selected"));
+      tableDivs[tableNo - 1].classList.add("selected");
+      selectedTable = tableNo;
+      document.getElementById("selectedTableInput").value = "Table " + tableNo;
+    };
+    showBookings();
+    if (bookings.length === 0) document.getElementById("bookingList").innerHTML = "<p style='color:#999; font-size:14px;'>No bookings yet.</p>";
+  }
+</script>
+
+</body>
+</html>
